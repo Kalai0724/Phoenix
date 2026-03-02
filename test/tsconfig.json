@@ -1,0 +1,15 @@
+{
+  "name": "phoenix-evaluations",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node test.js",
+    "eval": "node test.js"
+  },
+  "dependencies": {
+    "@arizeai/phoenix-evals": "latest",
+    "@arizeai/phoenix-client": "latest",
+    "@ai-sdk/openai": "latest",
+    "openai": "^4.0.0"
+  }
+}

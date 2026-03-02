@@ -1,0 +1,6 @@
+phoenix-ai
+agno
+httpx
+pandas
+python-dotenv
+openai

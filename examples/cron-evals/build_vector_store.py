@@ -1,20 +1,16 @@
-# type: ignore
-"""
-Builds and persists a LangChain Qdrant vector store over the Arize documentation.
-"""
 
-from langchain_community.document_loaders import GitbookLoader
+from langchain_community.document_loaders import WebBaseLoader
 from langchain_community.vectorstores import Qdrant
-from langchain_openai import OpenAIEmbeddings
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
-loader = GitbookLoader(
-    "https://docs.arize.com/arize/",
-    load_all_paths=True,
-)
+loader = WebBaseLoader("https://docs.arize.com/arize/")
 documents = loader.load()
-embeddings = OpenAIEmbeddings(
-    model="text-embedding-3-large",
-)
+print(f"Loaded {len(documents)} documents")
+if not documents:
+    raise RuntimeError("No documents loaded. Please check the documentation URL or try a different loader.")
+
+# Use Gemini embeddings
+embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 Qdrant.from_documents(
     documents,
     embeddings,
