@@ -1,5 +1,24 @@
 # Evaluation
 
+## Getting Started: Clone the Repository
+
+First, clone the Phoenix repository:
+
+```bash
+# Using HTTPS
+git clone https://github.com/arize-ai/phoenix.git
+cd phoenix/flowise
+```
+
+Or, if you use SSH:
+
+```bash
+git clone git@github.com:arize-ai/phoenix.git
+cd phoenix/flowise
+```
+
+---
+
 This README explains how to run evaluation scripts in the `flowise` directory of your Phoenix workspace.
 
 ## Prerequisites
@@ -47,7 +66,6 @@ python experiment1.py
 Download the dataset here:
 
 [Download CSV](data/evaluation_dataset_1.csv)
-
 
 ## Typical Workflow
 
