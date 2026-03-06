@@ -1,4 +1,5 @@
 import strawberry
+from typing import Optional
 from strawberry.scalars import JSON
 
 
@@ -12,3 +13,4 @@ class ExampleRevision:
     input: JSON
     output: JSON
     metadata: JSON
+    agent_response: Optional[str] = strawberry.field(name="agent_response", default=None)

@@ -78,6 +78,27 @@ def get_dataset_example_output(span: Span) -> dict[str, Any]:
     return _get_generic_io_value(io_value=output_value, mime_type=output_mime_type, kind="output")
 
 
+def get_dataset_example_response(span: Span) -> Optional[str]:
+    """
+    Extracts the output value from a span and returns it as a string.
+    """
+    output = get_dataset_example_output(span)
+    if not output:
+        return None
+    if "messages" in output and isinstance(output["messages"], list):
+        # Find the last assistant message
+        for message in reversed(output["messages"]):
+            if message.get("role") == "assistant" and (content := message.get("content")):
+                return content if isinstance(content, str) else json.dumps(content)
+    if "output" in output:
+        out = output["output"]
+        return out if isinstance(out, str) else json.dumps(out)
+    if len(output) == 1:
+        val = next(iter(output.values()))
+        return val if isinstance(val, str) else json.dumps(val)
+    return json.dumps(output)
+
+
 def get_experiment_example_output(span: Span) -> dict[str, Any]:
     """
     Extracts the output value from an experiment run span and returns it as a dictionary. Output

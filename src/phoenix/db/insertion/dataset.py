@@ -30,6 +30,7 @@ class ExampleContent:
     metadata: dict[str, Any] = field(default_factory=dict)
     splits: frozenset[str] = field(default_factory=frozenset)  # Set of split names
     span_id: Optional[str] = None  # OTEL span ID for linking back to traces
+    agent_response: Optional[str] = None
 
 
 Examples: TypeAlias = Iterable[ExampleContent]
@@ -124,6 +125,7 @@ async def insert_dataset_example_revision(
     metadata: Optional[Mapping[str, Any]] = None,
     revision_kind: RevisionKind = RevisionKind.CREATE,
     created_at: Optional[datetime] = None,
+    agent_response: Optional[str] = None,
 ) -> DatasetExampleRevisionId:
     id_ = await session.scalar(
         insert(models.DatasetExampleRevision)
@@ -133,6 +135,7 @@ async def insert_dataset_example_revision(
             input=input,
             output=output,
             metadata_=metadata,
+            agent_response=agent_response,
             revision_kind=revision_kind.value,
             created_at=created_at,
         )
@@ -351,6 +354,7 @@ async def add_dataset_examples(
                 output=example.output,
                 metadata=example.metadata,
                 created_at=created_at,
+                agent_response=example.agent_response,
             )
         except Exception:
             logger.exception(

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<79ed6de9c55a5310b2fd127e92322f0a>>
+ * @generated SignedSource<<4282e6168724e7d0f7ec67a0f215dc27>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -186,6 +186,13 @@ return {
                                 "kind": "ScalarField",
                                 "name": "metadata",
                                 "storageKey": null
+                              },
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "agent_response",
+                                "storageKey": null
                               }
                             ],
                             "storageKey": null
@@ -267,12 +274,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "93cd93577a230d47f89421b58878480d",
+    "cacheID": "c82320a9cbd4338a23cb2e5517127a5c",
     "id": null,
     "metadata": {},
     "name": "examplesLoaderQuery",
     "operationKind": "query",
-    "text": "query examplesLoaderQuery(\n  $id: ID!\n) {\n  dataset: node(id: $id) {\n    __typename\n    id\n    ...ExamplesTableFragment\n  }\n}\n\nfragment ExamplesTableFragment on Dataset {\n  examples(first: 100) {\n    edges {\n      example: node {\n        id\n        datasetSplits {\n          id\n          name\n          color\n        }\n        revision {\n          input\n          output\n          metadata\n        }\n      }\n      cursor\n      node {\n        __typename\n        id\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n  id\n}\n"
+    "text": "query examplesLoaderQuery(\n  $id: ID!\n) {\n  dataset: node(id: $id) {\n    __typename\n    id\n    ...ExamplesTableFragment\n  }\n}\n\nfragment ExamplesTableFragment on Dataset {\n  examples(first: 100) {\n    edges {\n      example: node {\n        id\n        datasetSplits {\n          id\n          name\n          color\n        }\n        revision {\n          input\n          output\n          metadata\n          agent_response\n        }\n      }\n      cursor\n      node {\n        __typename\n        id\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n  id\n}\n"
   }
 };
 })();

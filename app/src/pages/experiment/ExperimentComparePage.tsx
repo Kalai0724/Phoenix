@@ -17,6 +17,9 @@ import invariant from "tiny-invariant";
 import { css } from "@emotion/react";
 
 import { Alert, Flex, Loading, View } from "@phoenix/components";
+import { Button } from "@phoenix/components/button";
+import { Icon } from "@phoenix/components/icon";
+import { Icons } from "@phoenix/components/icon";
 import {
   ExperimentNameWithColorSwatch,
   useExperimentColors,
@@ -227,6 +230,33 @@ export function ExperimentComparePage() {
             viewMode={viewMode}
             onViewModeChange={onViewModeChange}
           />
+          <Button
+            variant="primary"
+            onClick={async () => {
+              // Export logic: download PDF file with all table data
+              const jsPDF = (await import("jspdf")).jsPDF;
+              const autoTable = (await import("jspdf-autotable")).default;
+              // Get table data from React state
+              const tableModule = await import("./ExperimentCompareTable");
+              const { getTableExportData } = tableModule;
+              const { headers, data } = getTableExportData();
+              // Generate PDF
+              const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+              autoTable(pdf, {
+                head: [headers],
+                body: data,
+                startY: 40,
+                styles: { fontSize: 10, cellPadding: 4 },
+                headStyles: { fillColor: [40, 40, 40], textColor: 255 },
+                margin: { left: 40, right: 40 },
+                tableWidth: 'auto',
+              });
+              pdf.save("experiment_comparison.pdf");
+            }}
+            leadingVisual={<Icon svg={<Icons.CodeDownload />} />}
+          >
+            Export
+          </Button>
         </Flex>
       </View>
       {baseExperimentId == null ? (

@@ -20,7 +20,7 @@ LLM_OUTPUT_MESSAGES = SpanAttributes.LLM_OUTPUT_MESSAGES
 
 
 INPUT = {"input": INPUT_VALUE}
-OUTPUT = {"output": OUTPUT_VALUE}
+OUTPUT = {"actual_output": OUTPUT_VALUE}
 IO = {**INPUT, **OUTPUT}
 
 
@@ -128,7 +128,7 @@ def get_qa_with_reference(
     ref = df_docs.groupby("context.trace_id")["reference"].apply(
         lambda x: separator.join(x.dropna())
     )
-    df_ref = pd.DataFrame({"reference": ref})
+    df_ref = pd.DataFrame({"context_docs": ref})
     df_qa_ref = pd.concat([df_qa, df_ref], axis=1, join="inner").set_index("context.span_id")
     return df_qa_ref
 

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b1c4ab21273a7899016b88ebd5549c1c>>
+ * @generated SignedSource<<8b755b894458a3d8e269e55c60cc98a1>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -21,6 +21,7 @@ export type ExamplesTableFragment$data = {
         }>;
         readonly id: string;
         readonly revision: {
+          readonly agent_response: string | null;
           readonly input: any;
           readonly metadata: any;
           readonly output: any;
@@ -203,6 +204,13 @@ return {
                       "kind": "ScalarField",
                       "name": "metadata",
                       "storageKey": null
+                    },
+                    {
+                      "alias": null,
+                      "args": null,
+                      "kind": "ScalarField",
+                      "name": "agent_response",
+                      "storageKey": null
                     }
                   ],
                   "storageKey": null
@@ -273,6 +281,6 @@ return {
 };
 })();
 
-(node as any).hash = "ebe08bedf9904f2cb003b0ebc5d3f682";
+(node as any).hash = "45f7059c011a670aa308007986c55d38";
 
 export default node;

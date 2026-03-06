@@ -200,7 +200,7 @@ class Dataset:
             )
 
         if not self.examples:
-            return pd.DataFrame(columns=["input", "output", "metadata"]).set_index(  # pyright: ignore[reportUnknownMemberType]
+            return pd.DataFrame(columns=["input", "output", "metadata", "agent_response"]).set_index(  # pyright: ignore[reportUnknownMemberType]
                 pd.Index([], name="example_id")
             )
 
@@ -210,6 +210,7 @@ class Dataset:
                 "input": deepcopy(example["input"]),
                 "output": deepcopy(example["output"]),
                 "metadata": deepcopy(example["metadata"]),
+                "agent_response": example.get("agent_response"),
             }
             for example in self.examples
         ]
@@ -322,12 +323,14 @@ class DatasetKeys:
         output_keys: frozenset[str],
         metadata_keys: frozenset[str],
         split_keys: frozenset[str] = frozenset(),
+        response_keys: frozenset[str] = frozenset(),
         span_id_key: Optional[str] = None,
     ):
         self.input = input_keys
         self.output = output_keys
         self.metadata = metadata_keys
         self.split = split_keys
+        self.response = response_keys
         self.span_id = span_id_key
 
         if self.input & self.output:
@@ -342,6 +345,15 @@ class DatasetKeys:
             raise ValueError(f"Output and split keys overlap: {self.output & self.split}")
         if self.metadata & self.split:
             raise ValueError(f"Metadata and split keys overlap: {self.metadata & self.split}")
+
+        if self.input & self.response:
+            raise ValueError(f"Input and response keys overlap: {self.input & self.response}")
+        if self.output & self.response:
+            raise ValueError(f"Output and response keys overlap: {self.output & self.response}")
+        if self.metadata & self.response:
+            raise ValueError(f"Metadata and response keys overlap: {self.metadata & self.response}")
+        if self.split & self.response:
+            raise ValueError(f"Split and response keys overlap: {self.split & self.response}")
 
         # Validate span_id_key doesn't overlap with other keys
         if self.span_id:
@@ -754,6 +766,7 @@ class Datasets:
         output_keys: Iterable[str] = (),
         metadata_keys: Iterable[str] = (),
         split_keys: Iterable[str] = (),
+        response_keys: Iterable[str] = (),
         span_id_key: Optional[str] = None,
         inputs: Iterable[Mapping[str, Any]] = (),
         outputs: Iterable[Mapping[str, Any]] = (),
@@ -857,6 +870,7 @@ class Datasets:
                 output_keys=output_keys,
                 metadata_keys=metadata_keys,
                 split_keys=split_keys,
+                response_keys=response_keys,
                 span_id_key=span_id_key,
                 dataset_description=dataset_description,
                 action="create",
@@ -886,6 +900,7 @@ class Datasets:
         output_keys: Iterable[str] = (),
         metadata_keys: Iterable[str] = (),
         split_keys: Iterable[str] = (),
+        response_keys: Iterable[str] = (),
         span_id_key: Optional[str] = None,
         inputs: Iterable[Mapping[str, Any]] = (),
         outputs: Iterable[Mapping[str, Any]] = (),
@@ -983,6 +998,7 @@ class Datasets:
                 output_keys=output_keys,
                 metadata_keys=metadata_keys,
                 split_keys=split_keys,
+                response_keys=response_keys,
                 span_id_key=span_id_key,
                 dataset_description=None,
                 action="append",
@@ -1046,6 +1062,7 @@ class Datasets:
         output_keys: Iterable[str] = (),
         metadata_keys: Iterable[str] = (),
         split_keys: Iterable[str] = (),
+        response_keys: Iterable[str] = (),
         span_id_key: Optional[str] = None,
         dataset_description: Optional[str] = None,
         action: Literal["create", "append"] = "create",
@@ -1058,6 +1075,7 @@ class Datasets:
         output_keys_set = frozenset(output_keys)
         metadata_keys_set = frozenset(metadata_keys)
         split_keys_set = frozenset(split_keys)
+        response_keys_set = frozenset(response_keys)
 
         # Auto-infer keys if none provided
         if not any([input_keys_set, output_keys_set, metadata_keys_set]):
@@ -1067,7 +1085,12 @@ class Datasets:
             metadata_keys_set = frozenset(metadata_keys_tuple)
 
         keys = DatasetKeys(
-            input_keys_set, output_keys_set, metadata_keys_set, split_keys_set, span_id_key
+            input_keys_set,
+            output_keys_set,
+            metadata_keys_set,
+            split_keys_set,
+            response_keys_set,
+            span_id_key,
         )
 
         if isinstance(table, Path) or isinstance(table, str):
@@ -1093,6 +1116,7 @@ class Datasets:
             "output_keys[]": sorted(keys.output),
             "metadata_keys[]": sorted(keys.metadata),
             "split_keys[]": sorted(keys.split),
+            "response_keys[]": sorted(keys.response),
         }
 
         # Add span_id_key if present
@@ -2039,10 +2063,12 @@ def _prepare_dataframe_as_csv(
 
     keys.check_differences(frozenset(df.columns))
 
-    # Ensure consistent column ordering: input, output, metadata, split, span_id
+    # Ensure consistent column ordering: input, output, metadata, split, response, span_id
     selected_columns: list[str] = (
         sorted(keys.input) + sorted(keys.output) + sorted(keys.metadata) + sorted(keys.split)
     )
+    if keys.response:
+        selected_columns += sorted(keys.response)
     if keys.span_id:
         selected_columns.append(keys.span_id)
 

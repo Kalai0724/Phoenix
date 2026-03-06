@@ -1,3 +1,4 @@
+import ast
 import json
 from asyncio import gather
 from collections import defaultdict
@@ -119,7 +120,8 @@ class SpanEvent:
 
 
 @strawberry.type
-class SpanAsExampleRevision(ExampleRevision): ...
+class SpanAsExampleRevision(ExampleRevision):
+    agent_response: Optional[str] = strawberry.field(name="agent_response", default=None)
 
 
 SpanRowId: TypeAlias = int
@@ -742,8 +744,19 @@ class Span(Node):
             **({"annotations": annotations} if annotations else {}),
         }
 
+        # Extract agent_response if it exists in attributes
+        agent_response = None
+        if (raw_resp := get_attribute_value(span.attributes, ["input", "raw_agent_response"])) and isinstance(raw_resp, str):
+            try:
+                resp_data = ast.literal_eval(raw_resp)
+                if isinstance(resp_data, dict):
+                    agent_response = resp_data.get("output")
+            except (ValueError, SyntaxError):
+                agent_response = raw_resp
+
         return SpanAsExampleRevision(
             input=get_dataset_example_input(span),
+            agent_response=agent_response,
             output=get_dataset_example_output(span),
             metadata=metadata,
         )

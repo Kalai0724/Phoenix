@@ -1311,6 +1311,7 @@ class DatasetExampleRevision(HasId):
         index=True,
     )
     input: Mapped[dict[str, Any]]
+    agent_response: Mapped[Optional[str]]
     output: Mapped[dict[str, Any]]
     metadata_: Mapped[dict[str, Any]] = mapped_column("metadata")
     revision_kind: Mapped[str] = mapped_column(

@@ -489,6 +489,37 @@ export function ExperimentCompareTable(props: ExampleCompareTableProps) {
     return [...baseColumns, ...experimentColumns];
   }, [baseColumns, experimentColumns]);
 
+  // Export handler: Export table as CSV
+  const handleExport = () => {
+    // Gather column headers
+    const headers = columns.map((col: any) => {
+      if (typeof col.header === 'string') return col.header;
+      if ('accessorKey' in col && col.accessorKey) return col.accessorKey;
+      return '';
+    });
+    // Gather row data
+    const rowsData = tableData.map((row: any) => {
+      return columns.map((col: any) => {
+        if ('accessorKey' in col && col.accessorKey) {
+          return JSON.stringify(row[col.accessorKey]);
+        }
+        return '[complex cell]';
+      });
+    });
+    // Build CSV string
+    const csvContent = [headers, ...rowsData].map(row => row.join(',')).join('\n');
+    // Download CSV
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'experiment_comparison_table.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const table = useReactTable<TableRow>({
     columns: columns,
     data: tableData,
@@ -561,8 +592,14 @@ export function ExperimentCompareTable(props: ExampleCompareTableProps) {
     refetch,
   ]);
 
+  // Attach tableData to window for export
+  if (typeof window !== "undefined") {
+    (window as any).tableData = tableData;
+  }
+
   return (
-    <View overflow="auto">
+    <View overflow="auto" className="experiment-compare-table">
+      {/* Removed wrongly placed export button */}
       <Flex direction="column" height="100%">
         <View
           paddingTop="size-100"
@@ -584,6 +621,7 @@ export function ExperimentCompareTable(props: ExampleCompareTableProps) {
         >
           <table
             css={css(tableCSS, borderedTableCSS)}
+            data-export-table
             style={{
               ...columnSizeVars,
               width: table.getTotalSize(),
@@ -1001,4 +1039,59 @@ function ExperimentRunOutputCell({
       )}
     </Flex>
   );
+}
+
+// Utility to extract all table data for export (including annotations)
+export function getTableExportData(): { headers: string[]; data: string[][] } {
+  // Use the same logic as ExperimentCompareTable to access tableData and columns
+  // NOTE: This assumes tableData and columns are accessible here
+  // If not, you may need to refactor to pass them in
+  // For now, we use the same logic as in the ExperimentCompareTable component
+
+  // Example headers
+  const headers: string[] = [
+    "input",
+    "reference output",
+    "output",
+    "llm_correctness",
+    "word_match_percent",
+    "annotation_details"
+  ];
+
+  // Access the global tableData (replace with actual state if needed)
+  // This is a placeholder; you must use the real tableData from your component
+  // For demonstration, we'll use window.tableData if available
+  const tableData: any[] = (window as any).tableData || [];
+
+  const data: string[][] = tableData.map((row: any) => {
+    // Extract input, reference output, output, evaluation results, and annotation details
+    const input = JSON.stringify(row.input);
+    const referenceOutput = JSON.stringify(row.referenceOutput);
+    // For output, get the first experiment column (base experiment)
+    const experimentIds = Object.keys(row.repeatedRunGroupsByExperimentId);
+    const baseExperimentId = experimentIds[0];
+    const repeatedRunGroup = row.repeatedRunGroupsByExperimentId[baseExperimentId];
+    let output = "";
+    let llmCorrectness = "";
+    let wordMatchPercent = "";
+    let annotationDetails = "";
+    if (repeatedRunGroup && repeatedRunGroup.runs && repeatedRunGroup.runs.length > 0) {
+      const run = repeatedRunGroup.runs[0];
+      output = JSON.stringify(run.output);
+      // Find llm_correctness and word_match_percent in run.annotations
+      if (run.annotations && run.annotations.edges) {
+        const llm = run.annotations.edges.find((edge: any) => edge.annotation.name === "llm_correctness");
+        const wordMatch = run.annotations.edges.find((edge: any) => edge.annotation.name === "word_match_percent");
+        llmCorrectness = llm ? `${llm.annotation.score} (${llm.annotation.label})` : "";
+        wordMatchPercent = wordMatch ? `${wordMatch.annotation.score}` : "";
+        // Collect annotation details
+        annotationDetails = run.annotations.edges.map((edge: any) => {
+          const a = edge.annotation;
+          return `Name: ${a.name}\nLabel: ${a.label}\nScore: ${a.score}\nKind: ${a.annotatorKind}\nExplanation: ${a.explanation || ""}`;
+        }).join("\n---\n");
+      }
+    }
+    return [input, referenceOutput, output, llmCorrectness, wordMatchPercent, annotationDetails];
+  });
+  return { headers, data };
 }

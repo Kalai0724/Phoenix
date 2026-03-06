@@ -16,6 +16,15 @@ from phoenix.experiments.evaluators import (
 from phoenix.experiments.types import ExampleInput
 from phoenix.otel import register
 
+import logging
+
+logging.basicConfig(
+    level=logging.DEBUG,   # change to INFO in production
+    format="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
 register(auto_instrument=True)
 
 httpx_client = httpx.Client()
@@ -253,3 +262,7 @@ experiment = phoenix_client.experiments.run_experiment(
     ],
     repetitions=5,
 )
+
+logger.debug("Creating dataset...")
+logger.info("Running experiment short-answer")
+logger.error("Something failed", exc_info=True)

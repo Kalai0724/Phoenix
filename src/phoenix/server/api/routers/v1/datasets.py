@@ -477,6 +477,7 @@ async def upload_dataset(
                     output_keys,
                     metadata_keys,
                     split_keys,
+                    response_keys,
                     span_id_key,
                     file,
                 ) = await _parse_form_data(form)
@@ -504,11 +505,12 @@ async def upload_dataset(
                     output_keys,
                     metadata_keys,
                     split_keys,
+                    response_keys,
                     span_id_key,
                 )
             elif file_content_type is FileContentType.PYARROW:
                 examples = await _process_pyarrow(
-                    content, input_keys, output_keys, metadata_keys, split_keys, span_id_key
+                    content, input_keys, output_keys, metadata_keys, split_keys, response_keys, span_id_key
                 )
             elif file_content_type is FileContentType.JSONL:
                 encoding = FileContentEncoding(file.headers.get("content-encoding"))
@@ -519,6 +521,7 @@ async def upload_dataset(
                     output_keys,
                     metadata_keys,
                     split_keys,
+                    response_keys,
                     span_id_key,
                 )
             else:
@@ -600,6 +603,7 @@ InputKeys: TypeAlias = frozenset[str]
 OutputKeys: TypeAlias = frozenset[str]
 MetadataKeys: TypeAlias = frozenset[str]
 SplitKeys: TypeAlias = frozenset[str]
+ResponseKeys: TypeAlias = frozenset[str]
 SpanIdKey: TypeAlias = Optional[str]
 DatasetId: TypeAlias = int
 Examples: TypeAlias = Iterator[ExampleContent]
@@ -704,6 +708,7 @@ async def _process_csv(
     output_keys: OutputKeys,
     metadata_keys: MetadataKeys,
     split_keys: SplitKeys,
+    response_keys: ResponseKeys,
     span_id_key: SpanIdKey,
 ) -> Examples:
     if content_encoding is FileContentEncoding.GZIP:
@@ -720,7 +725,7 @@ async def _process_csv(
         raise ValueError(f"Duplicated column header in CSV file: {header}")
     column_headers = frozenset(reader.fieldnames)
     _check_keys_exist(
-        column_headers, input_keys, output_keys, metadata_keys, split_keys, span_id_key
+        column_headers, input_keys, output_keys, metadata_keys, split_keys, response_keys, span_id_key
     )
 
     rows = list(reader)
@@ -733,6 +738,7 @@ async def _process_csv(
                 str(v).strip() for k in split_keys if (v := row.get(k)) and str(v).strip()
             ),  # Only include non-empty, non-whitespace split values
             span_id=_get_span_id(row, span_id_key),
+            agent_response=next((str(row[k]) for k in response_keys if row.get(k) is not None), None),
         )
         for row in rows
     )
@@ -744,6 +750,7 @@ async def _process_pyarrow(
     output_keys: OutputKeys,
     metadata_keys: MetadataKeys,
     split_keys: SplitKeys,
+    response_keys: ResponseKeys,
     span_id_key: SpanIdKey,
 ) -> Awaitable[Examples]:
     try:
@@ -752,7 +759,7 @@ async def _process_pyarrow(
         raise ValueError("File is not valid pyarrow") from e
     column_headers = frozenset(reader.schema.names)
     _check_keys_exist(
-        column_headers, input_keys, output_keys, metadata_keys, split_keys, span_id_key
+        column_headers, input_keys, output_keys, metadata_keys, split_keys, response_keys, span_id_key
     )
 
     def get_examples() -> Iterator[ExampleContent]:
@@ -765,6 +772,7 @@ async def _process_pyarrow(
                     str(v).strip() for k in split_keys if (v := row.get(k)) and str(v).strip()
                 ),  # Only include non-empty, non-whitespace split values
                 span_id=_get_span_id(row, span_id_key),
+                agent_response=next((str(row[k]) for k in response_keys if row.get(k) is not None), None),
             )
 
     return run_in_threadpool(get_examples)
@@ -777,6 +785,7 @@ async def _process_jsonl(
     output_keys: OutputKeys,
     metadata_keys: MetadataKeys,
     split_keys: SplitKeys,
+    response_keys: ResponseKeys,
     span_id_key: SpanIdKey,
 ) -> Examples:
     if encoding is FileContentEncoding.GZIP:
@@ -801,6 +810,7 @@ async def _process_jsonl(
                 str(v).strip() for k in split_keys if (v := obj.get(k)) and str(v).strip()
             ),  # Only include non-empty, non-whitespace split values
             span_id=_get_span_id(obj, span_id_key),
+            agent_response=next((str(obj[k]) for k in response_keys if obj.get(k) is not None), None),
         )
         examples.append(example)
     return iter(examples)
@@ -820,6 +830,7 @@ def _check_keys_exist(
     output_keys: OutputKeys,
     metadata_keys: MetadataKeys,
     split_keys: SplitKeys,
+    response_keys: ResponseKeys,
     span_id_key: SpanIdKey = None,
 ) -> None:
     for desc, keys in (
@@ -827,6 +838,7 @@ def _check_keys_exist(
         ("output", output_keys),
         ("metadata", metadata_keys),
         ("split", split_keys),
+        ("response", response_keys),
     ):
         if keys and (diff := keys.difference(column_headers)):
             raise ValueError(f"{desc} keys not found in column headers: {diff}")
@@ -857,6 +869,7 @@ async def _parse_form_data(
     OutputKeys,
     MetadataKeys,
     SplitKeys,
+    ResponseKeys,
     SpanIdKey,
     UploadFile,
 ]:
@@ -872,6 +885,7 @@ async def _parse_form_data(
     output_keys = frozenset(filter(bool, cast(list[str], form.getlist("output_keys[]"))))
     metadata_keys = frozenset(filter(bool, cast(list[str], form.getlist("metadata_keys[]"))))
     split_keys = frozenset(filter(bool, cast(list[str], form.getlist("split_keys[]"))))
+    response_keys = frozenset(filter(bool, cast(list[str], form.getlist("response_keys[]"))))
     span_id_key = cast(Optional[str], form.get("span_id_key")) or None
     return (
         action,
@@ -881,6 +895,7 @@ async def _parse_form_data(
         output_keys,
         metadata_keys,
         split_keys,
+        response_keys,
         span_id_key,
         file,
     )
@@ -889,6 +904,7 @@ async def _parse_form_data(
 class DatasetExample(V1RoutesBaseModel):
     id: str
     input: dict[str, Any]
+    agent_response: Optional[str]
     output: dict[str, Any]
     metadata: dict[str, Any]
     updated_at: datetime
@@ -1045,6 +1061,7 @@ async def get_dataset_examples(
             DatasetExample(
                 id=str(GlobalID("DatasetExample", str(example.id))),
                 input=revision.input,
+                agent_response=revision.agent_response,
                 output=revision.output,
                 metadata=revision.metadata_,
                 updated_at=revision.created_at,

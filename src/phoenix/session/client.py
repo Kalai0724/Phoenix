@@ -451,6 +451,7 @@ class Client(TraceDataExtractor):
                 input=example["input"],
                 output=example["output"],
                 metadata=example["metadata"],
+                response=example.get("agent_response"),
                 updated_at=datetime.fromisoformat(example["updated_at"]),
             )
             for example in data["examples"]

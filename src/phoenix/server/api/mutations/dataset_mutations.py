@@ -24,6 +24,7 @@ from phoenix.server.api.exceptions import BadRequest, NotFound
 from phoenix.server.api.helpers.dataset_helpers import (
     get_dataset_example_input,
     get_dataset_example_output,
+    get_dataset_example_response,
 )
 from phoenix.server.api.input_types.AddExamplesToDatasetInput import AddExamplesToDatasetInput
 from phoenix.server.api.input_types.AddSpansToDatasetInput import AddSpansToDatasetInput
@@ -204,7 +205,8 @@ class DatasetMutationMixin:
                         DatasetExampleRevision.dataset_example_id.key: dataset_example_rowid,
                         DatasetExampleRevision.dataset_version_id.key: dataset_version.id,
                         DatasetExampleRevision.input.key: get_dataset_example_input(span),
-                        DatasetExampleRevision.output.key: get_dataset_example_output(span),
+                        DatasetExampleRevision.output.key: {},
+                        DatasetExampleRevision.agent_response.key: get_dataset_example_response(span),
                         DatasetExampleRevision.metadata_.key: {
                             **(span.attributes.get(SpanAttributes.METADATA) or dict()),
                             **{
@@ -336,6 +338,11 @@ class DatasetMutationMixin:
                         DatasetExampleRevision.dataset_version_id.key: dataset_version_rowid,
                         DatasetExampleRevision.input.key: example.input,
                         DatasetExampleRevision.output.key: example.output,
+                        DatasetExampleRevision.agent_response.key: (
+                            example.agent_response
+                            if example.agent_response is not UNSET
+                            else None
+                        ),
                         DatasetExampleRevision.metadata_.key: {
                             **(example.metadata or {}),
                             "annotations": span_annotation,
@@ -589,6 +596,11 @@ def _to_orm_revision(
     input = patch.input if isinstance(patch.input, dict) else existing_revision.input
     output = patch.output if isinstance(patch.output, dict) else existing_revision.output
     metadata = patch.metadata if isinstance(patch.metadata, dict) else existing_revision.metadata_
+    agent_response = (
+        patch.agent_response
+        if patch.agent_response is not UNSET
+        else existing_revision.agent_response
+    )
     return {
         str(db_column.key): patch_value
         for db_column, patch_value in (
@@ -596,6 +608,7 @@ def _to_orm_revision(
             (db_rev.dataset_version_id, version_id),
             (db_rev.input, input),
             (db_rev.output, output),
+            (db_rev.agent_response, agent_response),
             (db_rev.metadata_, metadata),
             (db_rev.revision_kind, "PATCH"),
         )

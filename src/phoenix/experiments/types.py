@@ -72,6 +72,7 @@ class Example:
     input: Mapping[str, JSONSerializable] = field(default_factory=dict)
     output: Mapping[str, JSONSerializable] = field(default_factory=dict)
     metadata: Mapping[str, JSONSerializable] = field(default_factory=dict)
+    response: Optional[str] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "input", _make_read_only(self.input))
@@ -84,6 +85,7 @@ class Example:
             input=obj["input"],
             output=obj["output"],
             metadata=obj.get("metadata") or {},
+            response=obj.get("agent_response") or obj.get("response"),
             id=obj["id"],
             updated_at=obj["updated_at"],
         )
@@ -146,6 +148,7 @@ class Dataset:
                     "input": deepcopy(example.input),
                     "output": deepcopy(example.output),
                     "metadata": deepcopy(example.metadata),
+                    "response": example.response,
                 }
                 for example in self.examples.values()
             ]
@@ -550,6 +553,7 @@ class RanExperiment(Experiment):
                     "input": deepcopy((ex := self.dataset.examples[run.dataset_example_id]).input),
                     "expected": deepcopy(ex.output),
                     "metadata": deepcopy(ex.metadata),
+                    "response": ex.response,
                     "example_id": run.dataset_example_id,
                 }
                 for run in self.runs.values()

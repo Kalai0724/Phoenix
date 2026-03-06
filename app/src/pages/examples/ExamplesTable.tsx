@@ -97,6 +97,7 @@ export function ExamplesTable({
                   input
                   output
                   metadata
+                  agent_response
                 }
               }
             }
@@ -178,6 +179,7 @@ export function ExamplesTable({
           input: revision.input,
           output: revision.output,
           metadata: revision.metadata,
+          agent_response: revision.agent_response,
         };
       }),
     [data]
@@ -273,6 +275,14 @@ export function ExamplesTable({
         size: 300,
         cell: CompactJSONCell,
       },
+
+      {
+        header: "response",
+        accessorKey: "agent_response",
+        size: 150,
+        cell: ({ getValue }) => <span>{getValue() as string}</span>,
+      },
+
       {
         header: "output",
         accessorKey: "output",

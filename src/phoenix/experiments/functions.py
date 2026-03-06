@@ -80,6 +80,7 @@ def _convert_client_dataset(new_dataset: "ClientDataset") -> Dataset:
             input=example_data["input"],
             output=example_data["output"],
             metadata=example_data["metadata"],
+            response=example_data.get("agent_response"),
             updated_at=datetime.fromisoformat(example_data["updated_at"]),
         )
         examples_dict[legacy_example.id] = legacy_example
